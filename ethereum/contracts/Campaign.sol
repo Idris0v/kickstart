@@ -2,13 +2,13 @@ pragma solidity 0.4.17;
 
 contract CampaignFactory {
     address[] public deployedCampaigns;
-    
+
     function deployCampaign(uint minimum) public {
         address newCampaign = new Campaign(minimum, msg.sender);
         deployedCampaigns.push(newCampaign);
     }
-    
-    function getDeployedCampaigns() public view returns(address[]) {
+
+    function getDeployedCampaigns() public view returns (address[]) {
         return deployedCampaigns;
     }
 }
@@ -28,40 +28,40 @@ contract Campaign {
     Request[] public requests;
     mapping(address => bool) public approvers;
     uint public approversCount;
-    
+
     function Campaign(uint minimum, address creator) public {
         manager = creator;
         minimumContribution = minimum;
     }
-    
+
     modifier restricted() {
         require(msg.sender == manager);
         _;
     }
-    
+
     function contribute() public payable {
         require(msg.value > minimumContribution);
-        
+
         approvers[msg.sender] = true;
         approversCount++;
     }
-    
+
     function createRequest(
         string description,
         uint value,
         address recipient
     ) public restricted {
         Request memory request = Request({
-            description: description,
-            value: value,
-            recipient: recipient,
-            complete: false,
-            approvalCount: 0
+        description : description,
+        value : value,
+        recipient : recipient,
+        complete : false,
+        approvalCount : 0
         });
 
         requests.push(request);
     }
-    
+
     function approveRequest(uint requestIndex) public {
         Request storage request = requests[requestIndex];
 
@@ -71,7 +71,7 @@ contract Campaign {
         request.approvals[msg.sender] = true;
         request.approvalCount++;
     }
-    
+
     function finalize(uint requestIndex) public restricted {
         Request storage request = requests[requestIndex];
 
@@ -80,5 +80,21 @@ contract Campaign {
 
         request.recipient.transfer(request.value);
         request.complete = true;
+    }
+
+    function getSummary() public view returns (
+        uint, uint, uint, uint, address
+    ) {
+        return (
+        minimumContribution,
+        this.balance,
+        requests.length,
+        approversCount,
+        manager
+        );
+    }
+
+    function getRequestsCount() public view returns (uint) {
+        return requests.length;
     }
 }
